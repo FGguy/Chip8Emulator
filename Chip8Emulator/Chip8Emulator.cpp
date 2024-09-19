@@ -1,5 +1,3 @@
-// Chip8Emulator.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -25,25 +23,21 @@ int main(int argc, char *argv[])
     }
 
     //initialize ram and load program
-    std::vector<std::uint8_t> ram(4096);
+    std::vector<std::uint8_t> ram(4096,0);
     int ram_index{ 200 };
 
     while (!chip8ROM.eof()) {
-        if (ram_index > 4096) {
+        if (ram_index > 4095) {
             std::cerr << "Error: program is too big for memory. ";
             return 1;
         }
-        ram[ram_index++] = chip8ROM.get(); //make sure conversion is not causing dataloss
+        chip8ROM.read(reinterpret_cast<char*>(&ram[ram_index++]),sizeof(std::uint8_t)); 
     }
     chip8ROM.close();
 
     //run program
-    chip8Cpu cpu{ ram };
+    CPU cpu{ ram };
     cpu.execute();
-
     return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
 

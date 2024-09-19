@@ -1,29 +1,19 @@
+#include "CPU.h"
 #include <cstdint>
 #include <vector>
 #include <string>
 #include <iostream>
-class chip8Cpu
-{
 
-	private:
-        std::uint16_t index_r{}; //index register, only 12 bits used
-        std::uint16_t stack_r{}; //stack register
-        std::uint8_t delay_r{}; //delay timer register
-        std::uint8_t sound_r{}; //sound timer register
-        std::uint8_t Vx_r[16] = { 0 }; //general purpose registers
+    //need to implement some kind of clock mechanism for timed register, display refresh
+    //and instruction execution throttling.
 
-        std::vector<std::uint8_t>& chip8_ram;
-        std::uint32_t display[64] = { 0 }; //display pixel array
-        //pointer to RAM
-    public:
-        void execute() {
-            std::string line;
-            std::cout << "program is executing" << std::endl;
-            std::cin >> line;
-        }
+    void CPU::execute() {
+        //load fonts into memory
+        //set pc to first instruction in ram
+        //start fetch decode execute loop
+     }
 
-        chip8Cpu(std::vector<std::uint8_t> &ram)
-            : chip8_ram{ram}
-        {
-        }
-};
+    CPU::CPU(std::vector<std::uint8_t> &ram)
+        : chip8_ram{ ram }, pc_r{ 0 }, index_r{ 0 }, stack_r{}, delay_r{ 0 }, sound_r{ 0 }, Vx_r{}, display{}
+    {
+    }
