@@ -16,6 +16,7 @@ private:
     //pointer to RAM
 public:
     void execute();
+    void loadFonts();
     CPU(std::vector<std::uint8_t>& ram);
 };
 

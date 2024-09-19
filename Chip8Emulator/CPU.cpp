@@ -8,10 +8,125 @@
     //and instruction execution throttling.
 
     void CPU::execute() {
-        //load fonts into memory
+        loadFonts();
+        //start displaying display array
         //set pc to first instruction in ram
         //start fetch decode execute loop
      }
+
+    void CPU::loadFonts() {
+        //0
+        chip8_ram[0] = 0xF0;
+        chip8_ram[1] = 0x90;
+        chip8_ram[2] = 0x90;
+        chip8_ram[3] = 0x90;
+        chip8_ram[4] = 0xF0;
+
+        //1
+        chip8_ram[5] = 0x20;
+        chip8_ram[6] = 0x60;
+        chip8_ram[7] = 0x20;
+        chip8_ram[8] = 0x20;
+        chip8_ram[9] = 0x70;
+
+        //2
+        chip8_ram[10] = 0xF0;
+        chip8_ram[11] = 0x10;
+        chip8_ram[12] = 0xF0;
+        chip8_ram[13] = 0x80;
+        chip8_ram[14] = 0xF0;
+
+        //3
+        chip8_ram[15] = 0xF0;
+        chip8_ram[16] = 0x10;
+        chip8_ram[17] = 0xF0;
+        chip8_ram[18] = 0x10;
+        chip8_ram[19] = 0xF0;
+
+        //4
+        chip8_ram[20] = 0x90;
+        chip8_ram[21] = 0x90;
+        chip8_ram[22] = 0xF0;
+        chip8_ram[23] = 0x10;
+        chip8_ram[24] = 0x10;
+
+        //5
+        chip8_ram[25] = 0xF0;
+        chip8_ram[26] = 0x80;
+        chip8_ram[27] = 0xF0;
+        chip8_ram[28] = 0x10;
+        chip8_ram[29] = 0xF0;
+
+        //6
+        chip8_ram[30] = 0xF0;
+        chip8_ram[31] = 0x80;
+        chip8_ram[32] = 0xF0;
+        chip8_ram[33] = 0x90;
+        chip8_ram[34] = 0xF0;
+
+        //7
+        chip8_ram[35] = 0xF0;
+        chip8_ram[36] = 0x10;
+        chip8_ram[37] = 0x20;
+        chip8_ram[38] = 0x40;
+        chip8_ram[39] = 0x40;
+
+        //8
+        chip8_ram[40] = 0xF0;
+        chip8_ram[41] = 0x90;
+        chip8_ram[42] = 0xF0;
+        chip8_ram[43] = 0x90;
+        chip8_ram[44] = 0xF0;
+
+        //9
+        chip8_ram[45] = 0xF0;
+        chip8_ram[46] = 0x90;
+        chip8_ram[47] = 0xF0;
+        chip8_ram[48] = 0x10;
+        chip8_ram[49] = 0xF0;
+
+        //A
+        chip8_ram[50] = 0xF0;
+        chip8_ram[51] = 0x90;
+        chip8_ram[52] = 0xF0;
+        chip8_ram[53] = 0x90;
+        chip8_ram[54] = 0x90;
+
+        //B
+        chip8_ram[55] = 0xE0;
+        chip8_ram[56] = 0x90;
+        chip8_ram[57] = 0xE0;
+        chip8_ram[58] = 0x90;
+        chip8_ram[59] = 0xE0;
+
+        //C
+        chip8_ram[60] = 0xF0;
+        chip8_ram[61] = 0x80;
+        chip8_ram[62] = 0x80;
+        chip8_ram[63] = 0x80;
+        chip8_ram[64] = 0xF0;
+
+        //D -
+        chip8_ram[65] = 0xE0;
+        chip8_ram[66] = 0x90;
+        chip8_ram[67] = 0x90;
+        chip8_ram[68] = 0x90;
+        chip8_ram[69] = 0xE0;
+
+        //E
+        chip8_ram[70] = 0xF0;
+        chip8_ram[71] = 0x80;
+        chip8_ram[72] = 0xF0;
+        chip8_ram[73] = 0x80;
+        chip8_ram[74] = 0xF0;
+
+        //F
+        chip8_ram[75] = 0xF0;
+        chip8_ram[76] = 0x80;
+        chip8_ram[77] = 0xF0;
+        chip8_ram[78] = 0x80;
+        chip8_ram[79] = 0x80;
+    }
 
     CPU::CPU(std::vector<std::uint8_t> &ram)
         : chip8_ram{ ram }, pc_r{ 0 }, index_r{ 0 }, stack_r{}, delay_r{ 0 }, sound_r{ 0 }, Vx_r{}, display{}
