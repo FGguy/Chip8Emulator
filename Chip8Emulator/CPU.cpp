@@ -3,16 +3,72 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <SDL.h>
+#include <windows.h>
 
     //need to implement some kind of clock mechanism for timed register, display refresh
     //and instruction execution throttling.
 
-    void CPU::execute() {
+    int CPU::execute() {
         loadFonts();
+
         //start displaying display array
         //set pc to first instruction in ram
         //start fetch decode execute loop
+
+        //start window setup
+        if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
+            return 1;
+        }
+
+        c8Window = SDL_CreateWindow("Example", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 640, SDL_WINDOW_SHOWN);
+        if (!c8Window) {
+            return 1;
+        }
+
+        c8Renderer = SDL_CreateRenderer(c8Window, -1, SDL_RENDERER_ACCELERATED);
+        if (!c8Renderer) {
+            return 1;
+        }
+
+        //window cleanup
+        SDL_DestroyRenderer(c8Renderer);
+        SDL_DestroyWindow(c8Window);
+        SDL_Quit();
+
+        return 0;
      }
+
+    void CPU::renderScreenBuffer() {
+        //clear screen
+        SDL_SetRenderDrawColor(c8Renderer, 0, 0, 0, 255); //black
+        SDL_RenderClear(c8Renderer);
+
+        SDL_SetRenderDrawColor(c8Renderer, 255, 255, 255, 255); //white
+        SDL_Rect pixel;
+        pixel.x = 0;
+        pixel.y = 0;
+        pixel.h = 20;
+        pixel.w = 20;
+
+        //iterate over each bit in buffer
+        //if 0 black if 1 then white
+        for (int i = 0; i < 32; i++) {
+            std::uint64_t pixelRow = display[i];
+            for (int j = 0; j < 64; j++) {
+                std::uint64_t bit = pixelRow & 1;
+                if (bit == 1)
+                {
+                    SDL_RenderFillRect(c8Renderer, &pixel);
+                }
+                pixelRow >>= 1;
+                pixel.x += 20;
+            }
+            pixel.x = 0;
+            pixel.y += 20;
+        }
+        SDL_RenderPresent(c8Renderer);
+    }
 
     void CPU::loadFonts() {
         //0
@@ -129,6 +185,16 @@
     }
 
     CPU::CPU(std::vector<std::uint8_t> &ram)
-        : chip8_ram{ ram }, pc_r{ 0 }, index_r{ 0 }, stack_r{}, delay_r{ 0 }, sound_r{ 0 }, Vx_r{}, display{}
+        :
+        chip8_ram{ ram }, 
+        pc_r{ 0 }, 
+        index_r{ 0 }, 
+        stack_r{}, 
+        delay_r{ 0 }, 
+        sound_r{ 0 }, 
+        Vx_r{}, 
+        display{},
+        c8Window{nullptr},
+        c8Renderer{nullptr}
     {
     }

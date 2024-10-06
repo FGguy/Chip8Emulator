@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <SDL.h>
+#include <windows.h>
 class CPU
 {
 private:
@@ -12,11 +14,14 @@ private:
     std::uint8_t Vx_r[16]; //general purpose registers
 
     std::vector<std::uint8_t>& chip8_ram;
-    std::uint32_t display[64]; //display pixel array
+    std::uint64_t display[32]; //display pixel array
     //pointer to RAM
+    SDL_Window* c8Window;
+    SDL_Renderer* c8Renderer;
 public:
-    void execute();
+    int execute();
     void loadFonts();
+    void renderScreenBuffer();
     CPU(std::vector<std::uint8_t>& ram);
 };
 

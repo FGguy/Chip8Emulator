@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 
     //run program
     CPU cpu{ ram };
-    cpu.execute();
-    return 0;
+    return cpu.execute();
 }
 
