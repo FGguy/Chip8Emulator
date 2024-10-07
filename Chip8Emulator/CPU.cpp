@@ -12,9 +12,8 @@
     int CPU::execute() {
         loadFonts();
 
-        //start displaying display array
         //set pc to first instruction in ram
-        //start fetch decode execute loop
+
 
         //start window setup
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
@@ -29,6 +28,19 @@
         c8Renderer = SDL_CreateRenderer(c8Window, -1, SDL_RENDERER_ACCELERATED);
         if (!c8Renderer) {
             return 1;
+        }
+
+        //Fetch / decode / execute loop
+        pc_r = 200;
+        std::uint16_t instruction{ 0 };
+        // around 700 instructions per second
+        // every second refresh screen and decrement timers
+        while (true) {
+            // fetch
+            instruction = 0;
+            instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r + 1]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r]);
+            pc_r += 2;
+            decodeExecuteInstruction(instruction);
         }
 
         //window cleanup
@@ -68,6 +80,10 @@
             pixel.y += 20;
         }
         SDL_RenderPresent(c8Renderer);
+    }
+
+    void CPU::decodeExecuteInstruction(std::uint16_t instruction) {
+
     }
 
     void CPU::loadFonts() {
