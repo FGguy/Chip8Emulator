@@ -6,6 +6,7 @@
 #include <SDL.h>
 #include <windows.h>
 #include <chrono>
+#include <limits>
 
     //need to implement some kind of clock mechanism for timed register, display refresh
     //and instruction execution throttling.
@@ -117,58 +118,127 @@
         std::uint8_t nibble1 = (instruction >> 12) & 0b1111;
 
         switch (instruction) {
-        case 0x00E0: //clear screen
+        case 0x00E0: //clear screen DONE
+            for (int i = 0; i < 32; i++) {
+                display[i] = 0;
+            }
             return;
             break;
-        case 0x00EE: //return from subroutine
+        case 0x00EE: //return from subroutine DONE
+            pc_r = stack_r->top();
+            stack_r->pop();
             return;
             break;
         }
 
         switch (nibble1) {
-        case 0x1: //jump to
+        case 0x1: //jump to DONE
+            pc_r = instruction & 0x0FFF;
             break;
-        case 0x2: //call subroutine
+        case 0x2: //call subroutine DONE
+            stack_r->push(pc_r);
+            pc_r = instruction & 0x0FFF;
             break;
-        case 0x3: //conditional skip
+        case 0x3: //conditional skip DONE
+            std::uint8_t Vx = Vx_r[nibble2];
+            std::uint8_t Nn = instruction & 0x00FF;
+            if (Vx == Nn){
+                pc_r += 2;
+            }
             break;
-        case 0x4: //conditional skip
+        case 0x4: //conditional skip DONE
+            std::uint8_t Vx = Vx_r[nibble2];
+            std::uint8_t Nn = instruction & 0x00FF;
+            if (Vx != Nn) {
+                pc_r += 2;
+            }
             break;
-        case 0x5: //conditional skip
+        case 0x5: //conditional skip DONE
+            std::uint8_t Vx = Vx_r[nibble2];
+            std::uint8_t Vy = Vx_r[nibble3];
+            if (Vx == Vy) {
+                pc_r += 2;
+            }
             break;
-        case 0x9: //conditional skip
+        case 0x9: //conditional skip DONE
+            std::uint8_t Vx = Vx_r[nibble2];
+            std::uint8_t Vy = Vx_r[nibble3];
+            if (Vx != Vy) {
+                pc_r += 2;
+            }
             break;
-        case 0x6: //Set
+        case 0x6: //Set DONE
+            Vx_r[nibble2] = instruction & 0x00FF;
             break;
-        case 0x7: //Add
+        case 0x7: //Add DONE
+            Vx_r[nibble2] += instruction & 0x00FF;
             break;
         case 0x8:
             switch (nibble4) {
             case 0x0: //Set
+                Vx_r[nibble2] = Vx_r[nibble3];
                 break;
             case 0x1: //OR
+                Vx_r[nibble2] = Vx_r[nibble2] | Vx_r[nibble3];
                 break;
             case 0x2: //AND
+                Vx_r[nibble2] = Vx_r[nibble2] & Vx_r[nibble3];
                 break;
             case 0x3: //XOR
+                Vx_r[nibble2] = Vx_r[nibble2] ^ Vx_r[nibble3];
                 break;
             case 0x4: //Add
+                if ((0xFF - Vx_r[nibble2]) < Vx_r[nibble3]) {
+                    Vx_r[0xF] = 1;
+                }
+                Vx_r[nibble2] = Vx_r[nibble2] + Vx_r[nibble3];
                 break;
             case 0x5: //Subtract
+                if (Vx_r[nibble2] > Vx_r[nibble3]) {
+                    Vx_r[0xF] = 1;
+                }
+                else {
+                    Vx_r[0xF] = 0;
+                }
+                Vx_r[nibble2] = Vx_r[nibble2] - Vx_r[nibble3];
                 break;
             case 0x7: //Subtract
+                if (Vx_r[nibble2] > Vx_r[nibble3]) {
+                    Vx_r[0xF] = 0;
+                }
+                else {
+                    Vx_r[0xF] = 1;
+                }
+                Vx_r[nibble2] = Vx_r[nibble3] - Vx_r[nibble2];
                 break;
             case 0x6: //Shift
+                if ((Vx_r[nibble3] & 1) == 1) {
+                    Vx_r[0xF] = 1;
+                }
+                else {
+                    Vx_r[0xF] = 0;
+                }
+                Vx_r[nibble2] = Vx_r[nibble3] >> 1;
                 break;
             case 0xE: //Shift
+                if ((Vx_r[nibble3] & 0x80) == 0x80) {
+                    Vx_r[0xF] = 1;
+                }
+                else {
+                    Vx_r[0xF] = 0;
+                }
+                Vx_r[nibble2] = Vx_r[nibble3] << 1;
                 break;
             }
             break;
         case 0xA: //Set index
+            index_r = instruction & 0x0FFF;
             break;
         case 0xB: //jump with offset
+            pc_r = (instruction & 0x0FFF) + Vx_r[0x0];
             break;
         case 0xC: //Random
+            Vx_r[nibble2] = (rand() % 256) & (instruction & 0x00FF);
             break;
         case 0xD: //Display
             break;
