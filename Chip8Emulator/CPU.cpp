@@ -5,15 +5,13 @@
 #include <iostream>
 #include <SDL.h>
 #include <windows.h>
+#include <chrono>
 
     //need to implement some kind of clock mechanism for timed register, display refresh
     //and instruction execution throttling.
 
     int CPU::execute() {
         loadFonts();
-
-        //set pc to first instruction in ram
-
 
         //start window setup
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
@@ -33,14 +31,44 @@
         //Fetch / decode / execute loop
         pc_r = 200;
         std::uint16_t instruction{ 0 };
-        // around 700 instructions per second
-        // every second refresh screen and decrement timers
+
+        //might be buggy
+        const int targetFPS = 60; // Target frames per second
+        const std::chrono::milliseconds frameDuration(1000 / targetFPS);
+        const int targetIPS = 700; 
+        const std::chrono::milliseconds InstructionDuration(2);
+
+        auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
+        auto lastCallTimeInstructions = std::chrono::steady_clock::now();
         while (true) {
             // fetch
             instruction = 0;
             instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r + 1]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r]);
             pc_r += 2;
-            decodeExecuteInstruction(instruction);
+
+            auto currentTime = std::chrono::steady_clock::now(); // Get current time
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
+
+            if (elapsed >= InstructionDuration) {
+                decodeExecuteInstruction(instruction);
+                lastCallTimeInstructions = currentTime;
+            }
+
+            currentTime = std::chrono::steady_clock::now(); // Get current time
+            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
+
+            if (elapsed >= frameDuration) {
+                renderScreenBuffer();
+                if( delay_r > 0 ){
+                    //do a thing
+                    delay_r--;
+                }
+                if (sound_r > 0) {
+                    //do a thing
+                    sound_r--;
+                }
+                lastCallTimeFrames = currentTime;
+            }
         }
 
         //window cleanup
@@ -83,7 +111,105 @@
     }
 
     void CPU::decodeExecuteInstruction(std::uint16_t instruction) {
+        std::uint8_t nibble4 = instruction & 0b1111;
+        std::uint8_t nibble3 = (instruction >> 4) & 0b1111;
+        std::uint8_t nibble2 = (instruction >> 8) & 0b1111;
+        std::uint8_t nibble1 = (instruction >> 12) & 0b1111;
 
+        switch (instruction) {
+        case 0x00E0: //clear screen
+            return;
+            break;
+        case 0x00EE: //return from subroutine
+            return;
+            break;
+        }
+
+        switch (nibble1) {
+        case 0x1: //jump to
+            break;
+        case 0x2: //call subroutine
+            break;
+        case 0x3: //conditional skip
+            break;
+        case 0x4: //conditional skip
+            break;
+        case 0x5: //conditional skip
+            break;
+        case 0x9: //conditional skip
+            break;
+        case 0x6: //Set
+            break;
+        case 0x7: //Add
+            break;
+        case 0x8:
+            switch (nibble4) {
+            case 0x0: //Set
+                break;
+            case 0x1: //OR
+                break;
+            case 0x2: //AND
+                break;
+            case 0x3: //XOR
+                break;
+            case 0x4: //Add
+                break;
+            case 0x5: //Subtract
+                break;
+            case 0x7: //Subtract
+                break;
+            case 0x6: //Shift
+                break;
+            case 0xE: //Shift
+                break;
+            }
+            break;
+        case 0xA: //Set index
+            break;
+        case 0xB: //jump with offset
+            break;
+        case 0xC: //Random
+            break;
+        case 0xD: //Display
+            break;
+        case 0xE: 
+            if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key
+
+            }
+            else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key
+
+            }
+            break;
+        case 0xF:
+            if (nibble3 == 0x0 && nibble4 == 0x7) { //Timer
+
+            }
+            else if (nibble3 == 0x1 && nibble4 == 0x5) { //Timer
+
+            }
+            else if (nibble3 == 0x1 && nibble4 == 0x8) { //Timer
+
+            }
+            else if (nibble3 == 0x1 && nibble4 == 0xE) { //Add to index
+
+            }
+            else if (nibble3 == 0x0 && nibble4 == 0xA) { //Get key
+
+            }
+            else if (nibble3 == 0x2 && nibble4 == 0x9) { //Font Character
+
+            }
+            else if (nibble3 == 0x3 && nibble4 == 0x3) { //Binary-coded decimal conversion
+
+            }
+            else if (nibble3 == 0x5 && nibble4 == 0x5) { //Store and load memory
+
+            }
+            else if (nibble3 == 0x6 && nibble4 == 0x5) { //Store and load memory
+
+            }
+            break;
+        }
     }
 
     void CPU::loadFonts() {
