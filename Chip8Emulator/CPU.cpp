@@ -39,26 +39,26 @@
         const int targetIPS = 700; 
         const std::chrono::milliseconds InstructionDuration(2);
 
-        auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
-        auto lastCallTimeInstructions = std::chrono::steady_clock::now();
-        while (true) {
+        //auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
+        //auto lastCallTimeInstructions = std::chrono::steady_clock::now();
+        while (pc_r <4065) {
             // fetch
             instruction = 0;
             instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r + 1]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r]);
             pc_r += 2;
 
-            auto currentTime = std::chrono::steady_clock::now(); // Get current time
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
+            //auto currentTime = std::chrono::steady_clock::now(); // Get current time
+            //auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
 
-            if (elapsed >= InstructionDuration) {
+            //if (elapsed >= InstructionDuration) {
                 decodeExecuteInstruction(instruction);
-                lastCallTimeInstructions = currentTime;
-            }
+                //lastCallTimeInstructions = currentTime;
+            //}
 
-            currentTime = std::chrono::steady_clock::now(); // Get current time
-            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
+            //currentTime = std::chrono::steady_clock::now(); // Get current time
+            //elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
 
-            if (elapsed >= frameDuration) {
+            //if (elapsed >= frameDuration) {
                 renderScreenBuffer();
                 if( delay_r > 0 ){
                     //do a thing
@@ -68,15 +68,15 @@
                     //do a thing
                     sound_r--;
                 }
-                lastCallTimeFrames = currentTime;
-            }
+                //lastCallTimeFrames = currentTime;
+            //}
         }
 
+        Sleep(5);
         //window cleanup
         SDL_DestroyRenderer(c8Renderer);
         SDL_DestroyWindow(c8Window);
         SDL_Quit();
-
         return 0;
      }
 
@@ -138,13 +138,16 @@
         std::uint8_t y_coordinate = 0;
 
         switch (nibble1) {
+
         case 0x1: //jump to DONE
             pc_r = instruction & 0x0FFF;
             break;
+
         case 0x2: //call subroutine DONE
             stack_r->push(pc_r);
             pc_r = instruction & 0x0FFF;
             break;
+
         case 0x3: //conditional skip DONE
             Vx = Vx_r[nibble2];
             Nn = instruction & 0x00FF;
@@ -152,6 +155,7 @@
                 pc_r += 2;
             }
             break;
+
         case 0x4: //conditional skip DONE
             Vx = Vx_r[nibble2];
             Nn = instruction & 0x00FF;
@@ -159,6 +163,7 @@
                 pc_r += 2;
             }
             break;
+
         case 0x5: //conditional skip DONE
             Vx = Vx_r[nibble2];
             Vy = Vx_r[nibble3];
@@ -166,6 +171,7 @@
                 pc_r += 2;
             }
             break;
+
         case 0x9: //conditional skip DONE
             Vx = Vx_r[nibble2];
             Vy = Vx_r[nibble3];
@@ -173,32 +179,41 @@
                 pc_r += 2;
             }
             break;
+
         case 0x6: //Set DONE
             Vx_r[nibble2] = instruction & 0x00FF;
             break;
+
         case 0x7: //Add DONE
             Vx_r[nibble2] += instruction & 0x00FF;
             break;
+
         case 0x8:
+
             switch (nibble4) {
             case 0x0: //Set
                 Vx_r[nibble2] = Vx_r[nibble3];
                 break;
+
             case 0x1: //OR
                 Vx_r[nibble2] = Vx_r[nibble2] | Vx_r[nibble3];
                 break;
+
             case 0x2: //AND
                 Vx_r[nibble2] = Vx_r[nibble2] & Vx_r[nibble3];
                 break;
+
             case 0x3: //XOR
                 Vx_r[nibble2] = Vx_r[nibble2] ^ Vx_r[nibble3];
                 break;
+
             case 0x4: //Add
                 if ((0xFF - Vx_r[nibble2]) < Vx_r[nibble3]) {
                     Vx_r[0xF] = 1;
                 }
                 Vx_r[nibble2] = Vx_r[nibble2] + Vx_r[nibble3];
                 break;
+
             case 0x5: //Subtract
                 if (Vx_r[nibble2] > Vx_r[nibble3]) {
                     Vx_r[0xF] = 1;
@@ -208,6 +223,7 @@
                 }
                 Vx_r[nibble2] = Vx_r[nibble2] - Vx_r[nibble3];
                 break;
+
             case 0x7: //Subtract
                 if (Vx_r[nibble2] > Vx_r[nibble3]) {
                     Vx_r[0xF] = 0;
@@ -217,6 +233,7 @@
                 }
                 Vx_r[nibble2] = Vx_r[nibble3] - Vx_r[nibble2];
                 break;
+
             case 0x6: //Shift
                 if ((Vx_r[nibble3] & 1) == 1) {
                     Vx_r[0xF] = 1;
@@ -226,6 +243,7 @@
                 }
                 Vx_r[nibble2] = Vx_r[nibble3] >> 1;
                 break;
+
             case 0xE: //Shift
                 if ((Vx_r[nibble3] & 0x80) == 0x80) {
                     Vx_r[0xF] = 1;
@@ -235,17 +253,22 @@
                 }
                 Vx_r[nibble2] = Vx_r[nibble3] << 1;
                 break;
+
             }
             break;
+
         case 0xA: //Set index
             index_r = instruction & 0x0FFF;
             break;
+
         case 0xB: //jump with offset
             pc_r = (instruction & 0x0FFF) + Vx_r[0x0];
             break;
+
         case 0xC: //Random
             Vx_r[nibble2] = (rand() % 256) & (instruction & 0x00FF);
             break;
+
         case 0xD: //Display
             x_coordinate = Vx_r[nibble2] % 64;
             y_coordinate = Vx_r[nibble3] % 32;
@@ -274,12 +297,14 @@
                         break;
                     }
                 }
+                x_coordinate = Vx_r[nibble2] % 64;
                 y_coordinate++;
                 if (y_coordinate > 31) {
                     break;
                 }
             }
             break;
+
         case 0xE: 
             if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key IO
 
@@ -288,6 +313,7 @@
 
             }
             break;
+
         case 0xF:
             if (nibble3 == 0x0 && nibble4 == 0x7) { //Timer
                 Vx_r[nibble2] = delay_r;
