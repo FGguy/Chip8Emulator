@@ -131,6 +131,12 @@
             break;
         }
 
+        std::uint8_t Vx = 0;
+        std::uint8_t Vy = 0;
+        std::uint8_t Nn = 0;
+        std::uint8_t x_coordinate = 0;
+        std::uint8_t y_coordinate = 0;
+
         switch (nibble1) {
         case 0x1: //jump to DONE
             pc_r = instruction & 0x0FFF;
@@ -140,29 +146,29 @@
             pc_r = instruction & 0x0FFF;
             break;
         case 0x3: //conditional skip DONE
-            std::uint8_t Vx = Vx_r[nibble2];
-            std::uint8_t Nn = instruction & 0x00FF;
+            Vx = Vx_r[nibble2];
+            Nn = instruction & 0x00FF;
             if (Vx == Nn){
                 pc_r += 2;
             }
             break;
         case 0x4: //conditional skip DONE
-            std::uint8_t Vx = Vx_r[nibble2];
-            std::uint8_t Nn = instruction & 0x00FF;
+            Vx = Vx_r[nibble2];
+            Nn = instruction & 0x00FF;
             if (Vx != Nn) {
                 pc_r += 2;
             }
             break;
         case 0x5: //conditional skip DONE
-            std::uint8_t Vx = Vx_r[nibble2];
-            std::uint8_t Vy = Vx_r[nibble3];
+            Vx = Vx_r[nibble2];
+            Vy = Vx_r[nibble3];
             if (Vx == Vy) {
                 pc_r += 2;
             }
             break;
         case 0x9: //conditional skip DONE
-            std::uint8_t Vx = Vx_r[nibble2];
-            std::uint8_t Vy = Vx_r[nibble3];
+            Vx = Vx_r[nibble2];
+            Vy = Vx_r[nibble3];
             if (Vx != Vy) {
                 pc_r += 2;
             }
@@ -241,33 +247,65 @@
             Vx_r[nibble2] = (rand() % 256) & (instruction & 0x00FF);
             break;
         case 0xD: //Display
+            x_coordinate = Vx_r[nibble2] % 64;
+            y_coordinate = Vx_r[nibble3] % 32;
+            Vx_r[0xF] = 0;
+            for (int i = 0; i < nibble4; i++) {
+                std::uint8_t row = chip8_ram[index_r + i];
+                for(int j = 0; j < 8; j++) {
+                    //from left to right, xor with each pixel in display, if both bits are 1 set to 0 and set Vf to 1
+                    std::uint64_t pixel = 0;
+                    //find out if left most is one or zero
+                    if ((row & 0b01111111) == 128) {
+                        pixel = 1;
+                    }
+                    else {
+                        pixel = 0;
+                    }
+                    //bitshift by x coordinate
+                    pixel = pixel << (63 - x_coordinate);
+                    //check for Vf register 
+                    if ((display[y_coordinate] & pixel) != 0) {
+                        Vx_r[0xF] = 1;
+                    }
+                    display[y_coordinate] = display[y_coordinate] ^ pixel;
+                    x_coordinate++;
+                    if (x_coordinate > 63) {
+                        break;
+                    }
+                }
+                y_coordinate++;
+                if (y_coordinate > 31) {
+                    break;
+                }
+            }
             break;
         case 0xE: 
-            if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key
+            if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key IO
 
             }
-            else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key
+            else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key IO
 
             }
             break;
         case 0xF:
             if (nibble3 == 0x0 && nibble4 == 0x7) { //Timer
-
+                Vx_r[nibble2] = delay_r;
             }
             else if (nibble3 == 0x1 && nibble4 == 0x5) { //Timer
-
+                delay_r = Vx_r[nibble2];
             }
             else if (nibble3 == 0x1 && nibble4 == 0x8) { //Timer
-
+                sound_r = Vx_r[nibble2];
             }
             else if (nibble3 == 0x1 && nibble4 == 0xE) { //Add to index
-
+                index_r += Vx_r[nibble2];
             }
-            else if (nibble3 == 0x0 && nibble4 == 0xA) { //Get key
+            else if (nibble3 == 0x0 && nibble4 == 0xA) { //Get key IO
 
             }
             else if (nibble3 == 0x2 && nibble4 == 0x9) { //Font Character
-
+                index_r = nibble2 * 5;
             }
             else if (nibble3 == 0x3 && nibble4 == 0x3) { //Binary-coded decimal conversion
 
