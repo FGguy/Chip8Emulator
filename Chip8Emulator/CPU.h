@@ -24,6 +24,7 @@ public:
     void loadFonts();
     void renderScreenBuffer();
     void decodeExecuteInstruction(std::uint16_t instruction);
+    std::uint8_t checkInput();
     CPU(std::vector<std::uint8_t>& ram);
 };
 

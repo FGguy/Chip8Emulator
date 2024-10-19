@@ -23,11 +23,12 @@ int main(int argc, char *argv[])
     }
 
     //initialize ram and load program
-    std::vector<std::uint8_t> ram(4096,0);
+    int ram_size{ 4096 };
     int ram_index{ 200 };
+    std::vector<std::uint8_t> ram(ram_size,0);
 
     while (!chip8ROM.eof()) {
-        if (ram_index > 4095) {
+        if (ram_index > ram_size - 1) {
             std::cerr << "Error: program is too big for memory. ";
             return 1;
         }
