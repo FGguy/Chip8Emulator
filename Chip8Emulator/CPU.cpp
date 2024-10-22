@@ -57,8 +57,8 @@
             instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r + 1]);
             pc_r += 2;
 
-            //debugfile << "address: " << pc_r - 2 << ": " << std::endl;
-            //debugfile << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
+            std::cout << "address: " << pc_r - 2 << ": " << std::endl;
+            std::cout << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
 
             if (instruction == 0) {
                 break;
@@ -87,7 +87,7 @@
             //    }
             //    lastCallTimeFrames = currentTime;
             //}
-                //Sleep(500);
+            //Sleep(200);
         }
 
         Sleep(10000);
@@ -366,17 +366,22 @@
                 index_r = nibble2 * 5;
             }
             else if (nibble3 == 0x3 && nibble4 == 0x3) { //Binary-coded decimal conversion 
-                chip8_ram[index_r] = (Vx_r[nibble2]% 1000) / 100;
-                chip8_ram[index_r + 1] = (Vx_r[nibble2] % 100) /10;
-                chip8_ram[index_r + 2] = Vx_r[nibble2] % 10;
+                std::uint8_t decimal = Vx_r[nibble2];
+                chip8_ram[index_r + 2] = decimal % 10;
+                decimal /= 10;
+
+                chip8_ram[index_r + 1] = decimal % 10;
+                decimal /= 10;
+
+                chip8_ram[index_r] = decimal % 10;
             }
             else if (nibble3 == 0x5 && nibble4 == 0x5) { //Store and load memory
-                for (int reg = 0; reg < 15; reg++) {
+                for (int reg = 0; reg <= nibble2; reg++) {
                     chip8_ram[index_r + reg] = Vx_r[reg];
                 }
             }
             else if (nibble3 == 0x6 && nibble4 == 0x5) { //Store and load memory
-                for (int reg = 0; reg < 15; reg++) {
+                for (int reg = 0; reg <= nibble2; reg++) {
                     Vx_r[reg] = chip8_ram[index_r + reg];
                 }
             }
