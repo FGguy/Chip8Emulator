@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
     //initialize ram and load program
     int ram_size{ 4096 };
-    int ram_index{ 200 };
+    int ram_index{ 0x200 };
     std::vector<std::uint8_t> ram(ram_size,0);
 
     while (!chip8ROM.eof()) {

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <SDL.h>
 #include <windows.h>
 #include <chrono>
@@ -10,13 +11,11 @@
 #include <iomanip>
 #include <fstream>
 
-    //need to implement some kind of clock mechanism for timed register, display refresh
-    //and instruction execution throttling.
-
     int CPU::execute() {
-        std::ofstream outputFile("C:/Users/Yan/Desktop/output.txt");
-
         loadFonts();
+
+        //std::ofstream debugfile;
+        //debugfile.open("C:/Users/Yan/Desktop/output.txt");
 
         //start window setup
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
@@ -34,7 +33,7 @@
         }
 
         //Fetch / decode / execute loop
-        pc_r = 200;
+        pc_r = 0x200;
         std::uint16_t instruction{ 0 };
 
         //might be buggy
@@ -43,22 +42,30 @@
         const int targetIPS = 700; 
         const std::chrono::milliseconds InstructionDuration(2);
 
-        //auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
-        //auto lastCallTimeInstructions = std::chrono::steady_clock::now();
+        auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
+        auto lastCallTimeInstructions = std::chrono::steady_clock::now();
         int balls{ 0 };
+
+        //for (int i = 0x200; i < 4094; i+=2 ) {
+        //    debugfile << "address: " << i << ": " << std::endl;
+        //    debugfile << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << ((static_cast<std::uint16_t>(chip8_ram[i]) << 8) | static_cast<std::uint16_t>(chip8_ram[i + 1])) << std::endl;
+        //}
+
         while (pc_r < 4094) {
-            //display[balls++] = 13;
-            //if (balls > 31) {
-            //    balls = 0;
-            //}
             // fetch
             instruction = 0;
             instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r + 1]);
             pc_r += 2;
 
+            //debugfile << "address: " << pc_r - 2 << ": " << std::endl;
+            //debugfile << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
+
+            if (instruction == 0) {
+                break;
+            }
+
             //std::cout << std::hex << instruction << std::endl;
-            std::cout << "address: " << pc_r - 2 << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
-            outputFile << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
+
             //auto currentTime = std::chrono::steady_clock::now(); // Get current time
             //auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
 
@@ -68,24 +75,23 @@
             //}
 
             //currentTime = std::chrono::steady_clock::now(); // Get current time
-            //elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
+           // elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
 
             //if (elapsed >= frameDuration) {
                 renderScreenBuffer();
-                //if( delay_r > 0 ){
-                    //do a thing
-                    //delay_r--;
-                //}
-                //if (sound_r > 0) {
-                    //do a thing
-                    //sound_r--;
-                //}
-                //lastCallTimeFrames = currentTime;
+            //    if( delay_r > 0 ){
+            //        delay_r--;
+            //    }
+            //    if (sound_r > 0) {
+            //        sound_r--;
+            //    }
+            //    lastCallTimeFrames = currentTime;
             //}
                 //Sleep(500);
         }
 
-        Sleep(5000);
+        Sleep(10000);
+
         //window cleanup
         SDL_DestroyRenderer(c8Renderer);
         SDL_DestroyWindow(c8Window);
@@ -105,17 +111,17 @@
         pixel.h = 20;
         pixel.w = 20;
 
-        //iterate over each bit in buffer
-        //if 0 black if 1 then white
+        uint64_t bitmask = 0x8000000000000000u;
+
         for (int i = 0; i < 32; i++) {
-            std::uint64_t pixelRow = display[i];
+            std::uint64_t pixelRow { display[i] };
             for (int j = 0; j < 64; j++) {
-                std::uint64_t bit = pixelRow & 1;
-                if (bit == 1)
+                std::uint64_t bit = pixelRow & bitmask;
+                if (bit != 0)
                 {
                     SDL_RenderFillRect(c8Renderer, &pixel);
                 }
-                pixelRow >>= 1;
+                pixelRow <<= 1;
                 pixel.x += 20;
             }
             pixel.x = 0;
@@ -132,9 +138,7 @@
 
         switch (instruction) {
         case 0x00E0: //clear screen 
-            for (int i = 0; i < 32; i++) {
-                display[i] = 0;
-            }
+            memset(display, 0, sizeof(display));
             return;
             break;
         case 0x00EE: //return from subroutine 
@@ -287,25 +291,23 @@
             Vx_r[0xF] = 0;
             for (unsigned int row = 0; row < nibble4; ++row) {
                 std::uint8_t row_pixels = chip8_ram[index_r + row];
-                std::cout << static_cast<int>(row_pixels) << std::endl;
+                //std::cout << static_cast<int>(row_pixels) << std::endl;
                 for(int col = 0; col < 8; col++) {
                     //from left to right, xor with each pixel in display, if both bits are 1 set to 0 and set Vf to 1
                     std::uint64_t pixel = 0;
-                    //find out if left most is one or zero
-                    if ((row_pixels & 0b01111111u) != 0) {
-                        pixel = 1u;
-                    }
-                    else {
-                        pixel = 0u;
-                    }
+                    pixel = (row_pixels & 0b10000000u) ? 1u : 0u;
                     row_pixels = row_pixels << 1;
+
                     //bitshift by x coordinate
                     pixel = pixel << (63 - x_coordinate);
+
                     //check for Vf register 
                     if ((display[y_coordinate] & pixel) != 0) {
                         Vx_r[0xF] = 1;
                     }
+
                     display[y_coordinate] = display[y_coordinate] ^ pixel;
+
                     x_coordinate++;
                     if (x_coordinate > 63) {
                         break;
@@ -323,7 +325,7 @@
             if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key IO TODO
                 std::uint8_t keypress = checkInput();
                 if (keypress != 16u) {
-                    if (Vx_r[nibble2 == keypress]) {
+                    if (Vx_r[nibble2] == keypress) {
                         pc_r += 2;
                     }
                 }
@@ -331,7 +333,7 @@
             else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key IO TODO
                 std::uint8_t keypress = checkInput();
                 if (keypress != 16u) {
-                    if (Vx_r[nibble2 != keypress]) {
+                    if (Vx_r[nibble2] != keypress) {
                         pc_r += 2;
                     }
                 }
