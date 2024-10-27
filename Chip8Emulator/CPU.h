@@ -16,13 +16,16 @@ private:
 
     std::vector<std::uint8_t>& chip8_ram;
     std::uint64_t display[32]; //display pixel array
+    std::uint8_t keystate[16]; //keyboard state
+
     //pointer to RAM
     SDL_Window* c8Window;
     SDL_Renderer* c8Renderer;
 public:
     int execute();
+    bool ProcessInput(uint8_t* keys);
     void loadFonts();
-    void renderScreenBuffer();
+    void renderScreenBuffer(SDL_Rect& pixel);
     void decodeExecuteInstruction(std::uint16_t instruction);
     std::uint8_t checkInput();
     CPU(std::vector<std::uint8_t>& ram);

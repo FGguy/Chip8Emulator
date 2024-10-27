@@ -10,12 +10,10 @@
 #include <limits>
 #include <iomanip>
 #include <fstream>
+#include <SDL_audio.h>
 
     int CPU::execute() {
         loadFonts();
-
-        //std::ofstream debugfile;
-        //debugfile.open("C:/Users/Yan/Desktop/output.txt");
 
         //start window setup
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0) { //add error message if fails
@@ -44,74 +42,77 @@
 
         auto lastCallTimeFrames = std::chrono::steady_clock::now(); 
         auto lastCallTimeInstructions = std::chrono::steady_clock::now();
-        int balls{ 0 };
 
-        //for (int i = 0x200; i < 4094; i+=2 ) {
-        //    debugfile << "address: " << i << ": " << std::endl;
-        //    debugfile << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << ((static_cast<std::uint16_t>(chip8_ram[i]) << 8) | static_cast<std::uint16_t>(chip8_ram[i + 1])) << std::endl;
-        //}
-
-        while (pc_r < 4094) {
-            // fetch
-            instruction = 0;
-            instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r + 1]);
-            pc_r += 2;
-
-            std::cout << "address: " << pc_r - 2 << ": " << std::endl;
-            std::cout << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
-
-            if (instruction == 0) {
-                break;
-            }
-
-            //std::cout << std::hex << instruction << std::endl;
-
-            //auto currentTime = std::chrono::steady_clock::now(); // Get current time
-            //auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
-
-            //if (elapsed >= InstructionDuration) {
-               decodeExecuteInstruction(instruction);
-                //lastCallTimeInstructions = currentTime;
-            //}
-
-            //currentTime = std::chrono::steady_clock::now(); // Get current time
-           // elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
-
-            //if (elapsed >= frameDuration) {
-                renderScreenBuffer();
-            //    if( delay_r > 0 ){
-            //        delay_r--;
-            //    }
-            //    if (sound_r > 0) {
-            //        sound_r--;
-            //    }
-            //    lastCallTimeFrames = currentTime;
-            //}
-            //Sleep(200);
-        }
-
-        Sleep(10000);
-
-        //window cleanup
-        SDL_DestroyRenderer(c8Renderer);
-        SDL_DestroyWindow(c8Window);
-        SDL_Quit();
-        return 0;
-     }
-
-    void CPU::renderScreenBuffer() {
-        //clear screen
-        SDL_SetRenderDrawColor(c8Renderer, 0, 0, 0, 255); //black
-        SDL_RenderClear(c8Renderer);
-
-        SDL_SetRenderDrawColor(c8Renderer, 255, 255, 255, 255); //white
         SDL_Rect pixel;
         pixel.x = 0;
         pixel.y = 0;
         pixel.h = 20;
         pixel.w = 20;
 
+        while (pc_r < 4094) {
+            auto currentTime = std::chrono::steady_clock::now(); // Get current time
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
+
+            //throttle instruction execution speed (mainly for games)
+            if (elapsed >= InstructionDuration) {
+                ProcessInput(keystate);
+
+                // fetch
+                instruction = 0;
+                instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r + 1]);
+                pc_r += 2;
+
+                //std::cout << "address: " << pc_r - 2 << ": " << std::endl;
+                //std::cout << " - " << std::setfill('0') << std::setw(sizeof(std::uint16_t) * 2) << std::hex << instruction << std::endl;
+
+                //accidently read unitialized memory, not very good
+                if (instruction == 0) {
+                    break;
+                }
+
+               decodeExecuteInstruction(instruction);
+                lastCallTimeInstructions = currentTime;
+            }
+
+            currentTime = std::chrono::steady_clock::now(); // Get current time
+            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeFrames);
+
+            if (elapsed >= frameDuration) {
+              renderScreenBuffer(pixel);
+                if( delay_r > 0 ){
+                    delay_r--;
+                }
+                if (sound_r > 0) {
+                    //start playing sound
+                    sound_r--;
+                }
+                else {
+                    //stop playing sound
+                }
+                lastCallTimeFrames = currentTime;
+            }
+        }
+
+        //cleanup
+        SDL_CloseAudio();
+        SDL_DestroyRenderer(c8Renderer);
+        SDL_DestroyWindow(c8Window);
+        SDL_Quit();
+        return 0;
+     }
+
+    void CPU::renderScreenBuffer(SDL_Rect& pixel) {
+        //clear screen
+        SDL_SetRenderDrawColor(c8Renderer, 0, 0, 0, 255); //black
+        SDL_RenderClear(c8Renderer);
+
+        SDL_SetRenderDrawColor(c8Renderer, 255, 255, 255, 255); //white
+
         uint64_t bitmask = 0x8000000000000000u;
+
+        //reset pixel position
+        pixel.x = 0;
+        pixel.y = 0;
 
         for (int i = 0; i < 32; i++) {
             std::uint64_t pixelRow { display[i] };
@@ -291,7 +292,6 @@
             Vx_r[0xF] = 0;
             for (unsigned int row = 0; row < nibble4; ++row) {
                 std::uint8_t row_pixels = chip8_ram[index_r + row];
-                //std::cout << static_cast<int>(row_pixels) << std::endl;
                 for(int col = 0; col < 8; col++) {
                     //from left to right, xor with each pixel in display, if both bits are 1 set to 0 and set Vf to 1
                     std::uint64_t pixel = 0;
@@ -322,21 +322,15 @@
             break;
 
         case 0xE: 
-            if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key IO TODO
-                std::uint8_t keypress = checkInput();
-                if (keypress != 16u) {
-                    if (Vx_r[nibble2] == keypress) {
-                        pc_r += 2;
-                    }
-                }
+            if (nibble3 == 0x9 && nibble4 == 0xE) { //skip if key IO 
+                  if (keystate[Vx_r[nibble2]] != 1) {
+                      pc_r += 2;
+                  }
             }
-            else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key IO TODO
-                std::uint8_t keypress = checkInput();
-                if (keypress != 16u) {
-                    if (Vx_r[nibble2] != keypress) {
-                        pc_r += 2;
-                    }
-                }
+            else if (nibble3 == 0xA && nibble4 == 0x1) { //skip if key IO 
+                  if (keystate[Vx_r[nibble2]] != 1) {
+                      pc_r += 2;
+                  }
             }
             break;
 
@@ -354,13 +348,13 @@
                 index_r += Vx_r[nibble2];
             }
             else if (nibble3 == 0x0 && nibble4 == 0xA) { //Get key IO 
-                std::uint8_t keypress = checkInput();
-                if (keypress == 16u) {
-                    pc_r -= 2;
+                for (int i = 0; i < 16; i++) {
+                    if (keystate[i] != 0) {
+                        Vx_r[nibble2] = keystate[i];
+                        return;
+                    } 
                 }
-                else {
-                    Vx_r[nibble2] = keypress;
-                }
+                pc_r -= 2;
             }
             else if (nibble3 == 0x2 && nibble4 == 0x9) { //Font Character
                 index_r = nibble2 * 5;
@@ -389,67 +383,201 @@
         }
     }
 
-    std::uint8_t CPU::checkInput() {
+    bool CPU::ProcessInput(uint8_t* keys)
+    {
+        bool quit = false;
+
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_QUIT:
+            {
+                quit = true;
+            } break;
+
             case SDL_KEYDOWN:
-                switch (event.key.keysym.sym) {
-                case SDLK_0:
-                    return 0x0u;
-                    break;
+            {
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_ESCAPE:
+                {
+                    quit = true;
+                } break;
+
+                case SDLK_x:
+                {
+                    keys[0] = 1;
+                } break;
+
                 case SDLK_1:
-                    return 0x1u;
-                    break;
+                {
+                    keys[1] = 1;
+                } break;
+
                 case SDLK_2:
-                    return 0x2u;
-                    break;
+                {
+                    keys[2] = 1;
+                } break;
+
                 case SDLK_3:
-                    return 0x3u;
-                    break;
-                case SDLK_4:
-                    return 0x4u;
-                    break;
-                case SDLK_5:
-                    return 0x5u;
-                    break;
-                case SDLK_6:
-                    return 0x6u;
-                    break;
-                case SDLK_7:
-                    return 0x7u;
-                    break;
-                case SDLK_8:
-                    return 0x8u;
-                    break;
-                case SDLK_9:
-                    return 0x9u;
-                    break;
-                case SDLK_a:
-                    return 0xAu;
-                    break;
-                case SDLK_b:
-                    return 0xBu;
-                    break;
-                case SDLK_c:
-                    return 0xCu;
-                    break;
-                case SDLK_d:
-                    return 0xDu;
-                    break;
+                {
+                    keys[3] = 1;
+                } break;
+
+                case SDLK_q:
+                {
+                    keys[4] = 1;
+                } break;
+
+                case SDLK_w:
+                {
+                    keys[5] = 1;
+                } break;
+
                 case SDLK_e:
-                    return 0xEu;
-                    break;
+                {
+                    keys[6] = 1;
+                } break;
+
+                case SDLK_a:
+                {
+                    keys[7] = 1;
+                } break;
+
+                case SDLK_s:
+                {
+                    keys[8] = 1;
+                } break;
+
+                case SDLK_d:
+                {
+                    keys[9] = 1;
+                } break;
+
+                case SDLK_z:
+                {
+                    keys[0xA] = 1;
+                } break;
+
+                case SDLK_c:
+                {
+                    keys[0xB] = 1;
+                } break;
+
+                case SDLK_4:
+                {
+                    keys[0xC] = 1;
+                } break;
+
+                case SDLK_r:
+                {
+                    keys[0xD] = 1;
+                } break;
+
                 case SDLK_f:
-                    return 0xFu;
-                    break;
+                {
+                    keys[0xE] = 1;
+                } break;
+
+                case SDLK_v:
+                {
+                    keys[0xF] = 1;
+                } break;
                 }
-                break;
-            default:
-                break;
+            } break;
+
+            case SDL_KEYUP:
+            {
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_x:
+                {
+                    keys[0] = 0;
+                } break;
+
+                case SDLK_1:
+                {
+                    keys[1] = 0;
+                } break;
+
+                case SDLK_2:
+                {
+                    keys[2] = 0;
+                } break;
+
+                case SDLK_3:
+                {
+                    keys[3] = 0;
+                } break;
+
+                case SDLK_q:
+                {
+                    keys[4] = 0;
+                } break;
+
+                case SDLK_w:
+                {
+                    keys[5] = 0;
+                } break;
+
+                case SDLK_e:
+                {
+                    keys[6] = 0;
+                } break;
+
+                case SDLK_a:
+                {
+                    keys[7] = 0;
+                } break;
+
+                case SDLK_s:
+                {
+                    keys[8] = 0;
+                } break;
+
+                case SDLK_d:
+                {
+                    keys[9] = 0;
+                } break;
+
+                case SDLK_z:
+                {
+                    keys[0xA] = 0;
+                } break;
+
+                case SDLK_c:
+                {
+                    keys[0xB] = 0;
+                } break;
+
+                case SDLK_4:
+                {
+                    keys[0xC] = 0;
+                } break;
+
+                case SDLK_r:
+                {
+                    keys[0xD] = 0;
+                } break;
+
+                case SDLK_f:
+                {
+                    keys[0xE] = 0;
+                } break;
+
+                case SDLK_v:
+                {
+                    keys[0xF] = 0;
+                } break;
+                }
+            } break;
             }
-            return 16u;
         }
+
+        return quit;
     }
 
     void CPU::loadFonts() {
@@ -576,6 +704,7 @@
         sound_r{ 0 }, 
         Vx_r{}, 
         display{},
+        keystate{},
         c8Window{nullptr},
         c8Renderer{nullptr}
     {
