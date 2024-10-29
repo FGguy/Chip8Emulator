@@ -232,6 +232,9 @@
                 if ((0xFF - Vx_r[nibble2]) < Vx_r[nibble3]) {
                     Vx_r[0xF] = 1;
                 }
+                else {
+                    Vx_r[0xF] = 0;
+                }
                 Vx_r[nibble2] = Vx_r[nibble2] + Vx_r[nibble3];
                 break;
 
@@ -255,24 +258,24 @@
                 Vx_r[nibble2] = Vx_r[nibble3] - Vx_r[nibble2];
                 break;
 
-            case 0x6: //Shift
-                if ((Vx_r[nibble3] & 1) == 1) {
+            case 0x6: //Shift (ambiguous)
+                if ((Vx_r[nibble2] & 1) == 1) {
                     Vx_r[0xF] = 1;
                 }
                 else {
                     Vx_r[0xF] = 0;
                 }
-                Vx_r[nibble2] = Vx_r[nibble3] >> 1;
+                Vx_r[nibble2] = Vx_r[nibble2] >> 1;
                 break;
 
-            case 0xE: //Shift
-                if ((Vx_r[nibble3] & 0x80) == 0x80) {
+            case 0xE: //Shift (ambiguous)
+                if ((Vx_r[nibble2] & 0x80) == 0x80) {
                     Vx_r[0xF] = 1;
                 }
                 else {
                     Vx_r[0xF] = 0;
                 }
-                Vx_r[nibble2] = Vx_r[nibble3] << 1;
+                Vx_r[nibble2] = Vx_r[nibble2] << 1;
                 break;
 
             }
@@ -360,8 +363,8 @@
                 }
                 pc_r -= 2;
             }
-            else if (nibble3 == 0x2 && nibble4 == 0x9) { //Font Character
-                index_r = nibble2 * 5;
+            else if (nibble3 == 0x2 && nibble4 == 0x9) { //Font Character ?
+                index_r = Vx_r[nibble2] * 5;
             }
             else if (nibble3 == 0x3 && nibble4 == 0x3) { //Binary-coded decimal conversion 
                 std::uint8_t decimal = Vx_r[nibble2];
