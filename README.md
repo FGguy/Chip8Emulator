@@ -5,5 +5,5 @@
     *  https://austinmorlan.com/posts/chip8_emulator/
   - Used SDL2 to handle user input and graphics.
   - Filepath to rom needs to provided as a command-line argument to the executable.
-I reckon I could have added a class for handling graphics, IO and audio to make everything more readable and cleaner but
+> I reckon I could have added a class for handling graphics, IO and audio to make everything more readable and cleaner but
 this project is too small for me to deem it necessary, will definitely do so in my future emulators though.
