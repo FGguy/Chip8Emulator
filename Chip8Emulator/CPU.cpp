@@ -49,14 +49,18 @@
         pixel.h = 20;
         pixel.w = 20;
 
+        bool quit;
+
         while (pc_r < 4094) {
             auto currentTime = std::chrono::steady_clock::now(); // Get current time
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastCallTimeInstructions);
 
             //throttle instruction execution speed (mainly for games)
             if (elapsed >= InstructionDuration) {
-                ProcessInput(keystate);
-
+                quit = ProcessInput(keystate);
+                if (quit) {
+                    break;
+                }
                 // fetch
                 instruction = 0;
                 instruction = (static_cast<std::uint16_t>(chip8_ram[pc_r]) << 8) | static_cast<std::uint16_t>(chip8_ram[pc_r + 1]);
@@ -79,22 +83,21 @@
 
             if (elapsed >= frameDuration) {
               renderScreenBuffer(pixel);
-                if( delay_r > 0 ){
-                    delay_r--;
-                }
-                if (sound_r > 0) {
-                    //start playing sound
-                    sound_r--;
-                }
-                else {
-                    //stop playing sound
-                }
+              if (delay_r > 0) {
+                  delay_r--;
+              }
+              if (sound_r > 0) {
+                  //start playing sound
+                  sound_r--;
+              }
+              else {
+                  //stop playing sound
+              }
                 lastCallTimeFrames = currentTime;
             }
         }
 
         //cleanup
-        SDL_CloseAudio();
         SDL_DestroyRenderer(c8Renderer);
         SDL_DestroyWindow(c8Window);
         SDL_Quit();
@@ -114,6 +117,7 @@
         pixel.x = 0;
         pixel.y = 0;
 
+        //print each pixel to buffer
         for (int i = 0; i < 32; i++) {
             std::uint64_t pixelRow { display[i] };
             for (int j = 0; j < 64; j++) {
@@ -128,6 +132,7 @@
             pixel.x = 0;
             pixel.y += 20;
         }
+        //print buffer to screen
         SDL_RenderPresent(c8Renderer);
     }
 
@@ -156,7 +161,6 @@
         std::uint8_t y_coordinate = 0;
 
         switch (nibble1) {
-
         case 0x1: //jump to 
             pc_r = instruction & 0x0FFFu;
             break;
@@ -383,6 +387,7 @@
         }
     }
 
+    //shamelessly stolen from https://austinmorlan.com/posts/chip8_emulator/#the-platform-layer
     bool CPU::ProcessInput(uint8_t* keys)
     {
         bool quit = false;

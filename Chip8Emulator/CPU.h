@@ -27,7 +27,6 @@ public:
     void loadFonts();
     void renderScreenBuffer(SDL_Rect& pixel);
     void decodeExecuteInstruction(std::uint16_t instruction);
-    std::uint8_t checkInput();
     CPU(std::vector<std::uint8_t>& ram);
 };
 
